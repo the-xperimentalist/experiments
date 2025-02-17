@@ -256,7 +256,7 @@ class RouterHandler(BaseHTTPRequestHandler):
         self.send_response_content(content, status=404)
 
 def run_server(port=8000):
-    server_address = ('', port)
+    server_address = ('0.0.0.0', port)
     httpd = HTTPServer(server_address, RouterHandler)
 
     print(f"Server running on port {port}...")
