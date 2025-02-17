@@ -271,4 +271,4 @@ def run_server(port=8000):
         httpd.server_close()
 
 if __name__ == '__main__':
-    run_server()
+    run_server(8050)
