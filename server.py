@@ -14,18 +14,18 @@ class RouterHandler(BaseHTTPRequestHandler):
     # Dictionary to store route handlers
 
     get_routes = {
-        '/': 'handle_home',
-        '/api/users': 'handle_users',
+        '/experiments': 'handle_home',
+        '/experiments/api/users': 'handle_users',
     }
 
     post_routes = {
-        '/api/az/upload/sponsored_brands': 'handle_az_sb_upload',
-        '/api/az/upload/sponsored_products': 'handle_az_sp_upload',
-        '/api/az/upload/sponsored_display': 'handle_az_sd_upload',
-        '/api/az/upload/business_report': 'handle_az_br_upload',
-        '/api/az/upload/az_map': 'handle_az_map_upload',
-        '/api/az/upload/campaign_map': 'handle_az_campaign_map_upload',
-        '/api/az/request_dashboard_metrics': 'handle_dashboard_metrics'
+        '/experiments/api/az/upload/sponsored_brands': 'handle_az_sb_upload',
+        '/experiments/api/az/upload/sponsored_products': 'handle_az_sp_upload',
+        '/experiments/api/az/upload/sponsored_display': 'handle_az_sd_upload',
+        '/experiments/api/az/upload/business_report': 'handle_az_br_upload',
+        '/experiments/api/az/upload/az_map': 'handle_az_map_upload',
+        '/experiments/api/az/upload/campaign_map': 'handle_az_campaign_map_upload',
+        '/experiments/api/az/request_dashboard_metrics': 'handle_dashboard_metrics'
     }
 
     routes = {**get_routes, **post_routes}
