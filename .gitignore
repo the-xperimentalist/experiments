@@ -1,4 +1,12 @@
 venv/
 input_files/
 *.pem
+
+# Logs
+*.log
+logs/
+
+# Pycache
+**/*.pyc
 __pycache__/
+*.py[cod]

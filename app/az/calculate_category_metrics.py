@@ -8,7 +8,7 @@ from ..config import DEMO_DB_CONFIG
 from pprint import pprint
 
 
-def calculate_complete_category_metrics(br, client_name, start_date, end_date):
+def calculate_complete_category_metrics(br, client_name, start_date, end_date, category_list):
 
     last_value = get_last_value()
     last_value = last_value if last_value != None else 0
@@ -144,14 +144,12 @@ def calculate_complete_category_metrics(br, client_name, start_date, end_date):
     # to_calculate_values - units_sold, sales, aov, page_views, sessions, cr_percent, ad_spends, organic_sales,
     # ad_sales, impressions, clicks, ad_units, ctr, ad_cr_percent, cpc, acos, tacos
 
-    all_categories = br.category.unique().tolist()
-
     filtered_sd = sd[(sd["date"] >= start_date) & (sd["date"] <= end_date)]
     filtered_sp = sp[(sp["date"] >= start_date) & (sp["date"] <= end_date)]
     filtered_sb = sb[(sb["date"] >= start_date) & (sb["date"] <= end_date)]
 
     category_list = []
-    for category in all_categories:
+    for category in category_list:
         filtered_category_sb = filtered_sb[filtered_sb["category"] == category]
         filtered_category_sp = filtered_sp[filtered_sp["category"] == category]
         filtered_category_sd = filtered_sd[filtered_sd["category"] == category]

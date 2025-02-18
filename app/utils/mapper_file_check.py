@@ -35,7 +35,6 @@ def get_mapper_file(client_name, file_type):
 def get_date_file_with_type(client_name, file_type, start_date, end_date):
     demo_conn = psycopg2.connect(**DEMO_DB_CONFIG)
     demo_cur = demo_conn.cursor()
-    print(1)
     query = f"""
         SELECT date, values
         FROM public.api_marketplaceclientsinternaldata

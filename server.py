@@ -1,4 +1,7 @@
 
+import logging
+from logging.handlers import RotatingFileHandler
+
 import cgi
 import io
 import json
@@ -10,12 +13,32 @@ from app.az import *
 from app.utils import get_last_value, get_date_file_with_type
 
 
+if not os.path.exists('logs'):
+    os.makedirs('logs')
+
+logger = logging.getLogger('ServerLogger')
+logger.setLevel(logging.INFO)
+
+log_file = os.path.join('logs', 'server.log')
+handler = RotatingFileHandler(
+    log_file,
+    maxBytes=10*1024*1024,  # 10MB
+    backupCount=5,
+    encoding='utf-8'
+)
+
+formatter = logging.Formatter(
+    '%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+
 class RouterHandler(BaseHTTPRequestHandler):
-    # Dictionary to store route handlers
 
     get_routes = {
-        '/experiments': 'handle_home',
-        '/experiments/api/users': 'handle_users',
+        '/experiments': 'handle_home'
     }
 
     post_routes = {
@@ -30,7 +53,19 @@ class RouterHandler(BaseHTTPRequestHandler):
 
     routes = {**get_routes, **post_routes}
 
+    def _log_request_info(self):
+        """Log information about the incoming request"""
+        client_address = self.client_address[0]
+        request_line = self.requestline
+        logger.info(f"Request from {client_address}: {request_line}")
+
+    def _log_error_info(self, error_msg):
+        """Log error information"""
+        client_address = self.client_address[0]
+        logger.error(f"Error for {client_address}: {error_msg}")
+
     def do_GET(self):
+        self._log_request_info()
         # Parse the URL
         parsed_path = urlparse(self.path)
         path = parsed_path.path
@@ -46,6 +81,7 @@ class RouterHandler(BaseHTTPRequestHandler):
             self.handle_404()
 
     def do_POST(self):
+        self._log_request_info()
         parsed_path = urlparse(self.path)
         path = parsed_path.path
         query_params = parse_qs(parsed_path.query)
@@ -63,6 +99,9 @@ class RouterHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(bytes(content, "utf8"))
 
+        # Log response
+        logger.info(f"Response sent: Status {status}, Content-Type: {content_type}")
+
     # Route handlers
     def handle_home(self, params):
         content = """
@@ -70,14 +109,6 @@ class RouterHandler(BaseHTTPRequestHandler):
         <p>Try visiting /about or /api/users</p>
         """
         self.send_response_content(content)
-
-    def handle_users(self, params):
-        users = ["Alice", "Bob", "Charlie"]
-        content = {
-            "users": users,
-            "count": len(users)
-        }
-        self.send_response_content(str(content), content_type='application/json')
 
     def _get_df_from_upload(self, params):
         try:
@@ -110,10 +141,14 @@ class RouterHandler(BaseHTTPRequestHandler):
             if file_extension == '.csv':
                 df = pd.read_csv(io.BytesIO(file_content))
             else:
-                raise ValueError(f"Unknown action: {action}")
+                raise ValueError(f"Unknown file")
 
+            logger.info(f"Processing file: {file_item.filename}, Client: {client_name}")
+            logger.info(f"Date range: {start_date} to {end_date}")
             return df, client_name
         except Exception as e:
+            error_msg = str(e)
+            self.log_error_info(error_msg)
             error_response = {"error": str(e)}
             self.send_response_content(
                 json.dumps(error_response),
@@ -132,6 +167,8 @@ class RouterHandler(BaseHTTPRequestHandler):
                 content_type='application/json'
             )
         except Exception as e:
+            error_msg = str(e)
+            self.log_error_info(error_msg)
             error_response = {"error": str(e)}
             self.send_response_content(
                 json.dumps(error_response),
@@ -150,6 +187,8 @@ class RouterHandler(BaseHTTPRequestHandler):
                 content_type='application/json'
             )
         except Exception as e:
+            error_msg = str(e)
+            self.log_error_info(error_msg)
             error_response = {"error": str(e)}
             self.send_response_content(
                 json.dumps(error_response),
@@ -168,6 +207,8 @@ class RouterHandler(BaseHTTPRequestHandler):
                 content_type='application/json'
             )
         except Exception as e:
+            error_msg = str(e)
+            self.log_error_info(error_msg)
             error_response = {"error": str(e)}
             self.send_response_content(
                 json.dumps(error_response),
@@ -186,6 +227,8 @@ class RouterHandler(BaseHTTPRequestHandler):
                 content_type='application/json'
             )
         except Exception as e:
+            error_msg = str(e)
+            self.log_error_info(error_msg)
             error_response = {"error": str(e)}
             self.send_response_content(
                 json.dumps(error_response),
@@ -204,6 +247,8 @@ class RouterHandler(BaseHTTPRequestHandler):
                 content_type='application/json'
             )
         except Exception as e:
+            error_msg = str(e)
+            self.log_error_info(error_msg)
             error_response = {"error": str(e)}
             self.send_response_content(
                 json.dumps(error_response),
@@ -222,6 +267,8 @@ class RouterHandler(BaseHTTPRequestHandler):
                 content_type='application/json'
             )
         except Exception as e:
+            error_msg = str(e)
+            self.log_error_info(error_msg)
             error_response = {"error": str(e)}
             self.send_response_content(
                 json.dumps(error_response),
@@ -235,6 +282,8 @@ class RouterHandler(BaseHTTPRequestHandler):
             content_type = self.headers.get('Content-Type')
 
             if not content_type or not content_type.startswith('multipart/form-data'):
+                error_msg = "Invalid content type. Must be multipart/form-data"
+                self.log_error_info(error_msg)
                 raise ValueError("Invalid content type. Must be multipart/form-data")
 
             # Parse the form data
@@ -258,20 +307,26 @@ class RouterHandler(BaseHTTPRequestHandler):
             if file_extension == '.csv':
                 df = pd.read_csv(io.BytesIO(file_content))
             else:
-                raise ValueError(f"Unknown action: {action}")
+                raise ValueError(f"Unknown file")
 
             start_date = form.getvalue("start_date")
             end_date = form.getvalue("end_date")
             client_name = form.getvalue("client_name")
+            category_list = form.getvalue("category_list")
 
+            modified_category_list = category_list.split(",")
             response_data = calculate_complete_category_metrics(
-                df, client_name, start_date, end_date)
+                df, client_name, start_date, end_date, modified_category_list)
+
+            logger.info(f"Processed file: {file_item.filename}, Client: {client_name}, Date range: {start_date} to {end_date}, category list: {category_list}")
 
             self.send_response_content(
                 json.dumps(response_data, indent=2),
                 content_type='application/json'
             )
         except Exception as e:
+            error_msg = str(e)
+            self.log_error_info(error_msg)
             error_response = {"error": str(e)}
             self.send_response_content(
                 json.dumps(error_response),
@@ -280,6 +335,8 @@ class RouterHandler(BaseHTTPRequestHandler):
             )
 
     def handle_404(self, params=None):
+        error_msg = f"404 Not Found: {self.path}"
+        logger.warning(error_msg)
         content = "<h1>404 Not Found</h1><p>The requested route does not exist.</p>"
         self.send_response_content(content, status=404)
 
@@ -287,14 +344,18 @@ def run_server(port=8000):
     server_address = ('0.0.0.0', port)
     httpd = HTTPServer(server_address, RouterHandler)
 
+    logger.info(f"Server starting on port {port}")
     print(f"Server running on port {port}...")
     print("Available routes:")
     for route in RouterHandler.routes:
         print(f"- http://localhost:{port}{route}")
+        logger.info(f"Route available: http://localhost:{port}{route}")
 
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
+        shutdown_msg = "Server shutting down..."
+        logger.info(shutdown_msg)
         print("\nShutting down server...")
         httpd.server_close()
 
