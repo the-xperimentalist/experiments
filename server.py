@@ -48,7 +48,8 @@ class RouterHandler(BaseHTTPRequestHandler):
         '/experiments/api/az/upload/business_report': 'handle_az_br_upload',
         '/experiments/api/az/upload/az_map': 'handle_az_map_upload',
         '/experiments/api/az/upload/campaign_map': 'handle_az_campaign_map_upload',
-        '/experiments/api/az/request_dashboard_metrics': 'handle_dashboard_metrics'
+        '/experiments/api/az/request_dashboard_metrics': 'handle_dashboard_metrics',
+        '/experiments/api/az/get_feature_list_data': 'handle_feature_list_data_get'
     }
 
     routes = {**get_routes, **post_routes}
@@ -146,6 +147,51 @@ class RouterHandler(BaseHTTPRequestHandler):
             logger.info(f"Processing file: {file_item.filename}, Client: {client_name}")
             logger.info(f"Date range: {start_date} to {end_date}")
             return df, client_name
+        except Exception as e:
+            error_msg = str(e)
+            self._log_error_info(error_msg)
+            error_response = {"error": str(e)}
+            self.send_response_content(
+                json.dumps(error_response),
+                status=400,
+                content_type='application/json'
+            )
+
+    def handle_feature_list_data_get(self, params):
+        try:
+            # Parse the multipart form data
+            content_type = self.headers.get('Content-Type')
+
+            if not content_type or not content_type.startswith('multipart/form-data'):
+                raise ValueError("Invalid content type. Must be multipart/form-data")
+
+            # Parse the form data
+            form = cgi.FieldStorage(
+                fp=self.rfile,
+                headers=self.headers,
+                environ={
+                    'REQUEST_METHOD': 'POST',
+                    'CONTENT_TYPE': self.headers['Content-Type'],
+                }
+            )
+
+            # Read the file content
+            client_name = form.getvalue("client_name")
+            start_date = form.getvalue("start_date")
+            end_date = form.getvalue("end_date")
+            category_list = form.getvalue("category_list")
+            # file_type_list = form.getvalue("file_type_list")
+            file_type_list = ["sponsored_display", "sponsored_products", "sponsored_brands"]
+
+            logger.info(f"Received Client: {client_name}, date range: {start_date} to {end_date}, category_list: {category_list}, file_type_list: {file_type_list}")
+
+            category_list = category_list.split(",")
+            response_data = get_saved_data(client_name, start_date, end_date, category_list, file_type_list)
+
+            self.send_response_content(
+                response_data,
+                content_type='application/json'
+            )
         except Exception as e:
             error_msg = str(e)
             self._log_error_info(error_msg)
