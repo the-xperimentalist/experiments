@@ -65,7 +65,7 @@ class RouterHandler(BaseHTTPRequestHandler):
         logger.error(f"Error for {client_address}: {error_msg}")
 
     def do_GET(self):
-        self._log_request_info()
+        self.__log_request_info()
         # Parse the URL
         parsed_path = urlparse(self.path)
         path = parsed_path.path
@@ -81,7 +81,7 @@ class RouterHandler(BaseHTTPRequestHandler):
             self.handle_404()
 
     def do_POST(self):
-        self._log_request_info()
+        self.__log_request_info()
         parsed_path = urlparse(self.path)
         path = parsed_path.path
         query_params = parse_qs(parsed_path.query)
@@ -148,7 +148,7 @@ class RouterHandler(BaseHTTPRequestHandler):
             return df, client_name
         except Exception as e:
             error_msg = str(e)
-            self.log_error_info(error_msg)
+            self._log_error_info(error_msg)
             error_response = {"error": str(e)}
             self.send_response_content(
                 json.dumps(error_response),
@@ -168,7 +168,7 @@ class RouterHandler(BaseHTTPRequestHandler):
             )
         except Exception as e:
             error_msg = str(e)
-            self.log_error_info(error_msg)
+            self._log_error_info(error_msg)
             error_response = {"error": str(e)}
             self.send_response_content(
                 json.dumps(error_response),
@@ -188,7 +188,7 @@ class RouterHandler(BaseHTTPRequestHandler):
             )
         except Exception as e:
             error_msg = str(e)
-            self.log_error_info(error_msg)
+            self._log_error_info(error_msg)
             error_response = {"error": str(e)}
             self.send_response_content(
                 json.dumps(error_response),
@@ -208,7 +208,7 @@ class RouterHandler(BaseHTTPRequestHandler):
             )
         except Exception as e:
             error_msg = str(e)
-            self.log_error_info(error_msg)
+            self._log_error_info(error_msg)
             error_response = {"error": str(e)}
             self.send_response_content(
                 json.dumps(error_response),
@@ -228,7 +228,7 @@ class RouterHandler(BaseHTTPRequestHandler):
             )
         except Exception as e:
             error_msg = str(e)
-            self.log_error_info(error_msg)
+            self._log_error_info(error_msg)
             error_response = {"error": str(e)}
             self.send_response_content(
                 json.dumps(error_response),
@@ -248,7 +248,7 @@ class RouterHandler(BaseHTTPRequestHandler):
             )
         except Exception as e:
             error_msg = str(e)
-            self.log_error_info(error_msg)
+            self._log_error_info(error_msg)
             error_response = {"error": str(e)}
             self.send_response_content(
                 json.dumps(error_response),
@@ -268,7 +268,7 @@ class RouterHandler(BaseHTTPRequestHandler):
             )
         except Exception as e:
             error_msg = str(e)
-            self.log_error_info(error_msg)
+            self._log_error_info(error_msg)
             error_response = {"error": str(e)}
             self.send_response_content(
                 json.dumps(error_response),
@@ -283,7 +283,7 @@ class RouterHandler(BaseHTTPRequestHandler):
 
             if not content_type or not content_type.startswith('multipart/form-data'):
                 error_msg = "Invalid content type. Must be multipart/form-data"
-                self.log_error_info(error_msg)
+                self._log_error_info(error_msg)
                 raise ValueError("Invalid content type. Must be multipart/form-data")
 
             # Parse the form data
@@ -326,7 +326,7 @@ class RouterHandler(BaseHTTPRequestHandler):
             )
         except Exception as e:
             error_msg = str(e)
-            self.log_error_info(error_msg)
+            self._log_error_info(error_msg)
             error_response = {"error": str(e)}
             self.send_response_content(
                 json.dumps(error_response),
