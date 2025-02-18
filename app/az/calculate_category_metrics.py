@@ -168,13 +168,13 @@ def calculate_complete_category_metrics(br, client_name, start_date, end_date, c
         cat_dict["ad_spend"] = round(float(filtered_category_sb.ad_spend.sum() + filtered_category_sp.ad_spend.sum() + filtered_category_sd.ad_spend.sum()), 2)
         cat_dict["ad_units_ordered"] = int(filtered_category_sb.units_ordered.sum() + filtered_category_sp.units_ordered.sum() + filtered_category_sd.units_ordered.sum())
         cat_dict["ad_product_sales"] = round(float(filtered_category_sb.product_sales.sum() + filtered_category_sp.product_sales.sum() + filtered_category_sd.product_sales.sum()), 2)
-        cat_dict["aov"] = round((cat_dict["product_sales"] + cat_dict["product_sales_b2b"]) / (cat_dict["units_sold"] + cat_dict["units_sold_b2b"]), 2) if (cat_dict["units_sold"] + cat_dict["units_sold_b2b"]) != 0 else "-1"
-        cat_dict["cr_percent"] = round( category_br.units_ordered.sum() * 100 / category_br.total_sessions.sum(), 2 )
-        cat_dict["ctr_percent"] = round( cat_dict["ad_clicks"] * 100 / cat_dict["ad_impressions"], 2 ) if cat_dict["ad_impressions"] != 0 else -1
-        cat_dict["ad_cr_percent"] = round( cat_dict["ad_units_ordered"] * 100 / cat_dict["ad_impressions"], 2 ) if cat_dict["ad_impressions"] != 0 else -1
-        cat_dict["ad_cpc"] = round( cat_dict["ad_spend"] / cat_dict["ad_clicks"], 2 ) if cat_dict["ad_clicks"] != 0 else "-1"
-        cat_dict["ad_acos"] = round( cat_dict["ad_spend"] * 100 / cat_dict["ad_product_sales"], 2 ) if cat_dict["ad_product_sales"] != 0 else "-1"
-        cat_dict["tacos"] = round( cat_dict["ad_spend"] * 100 / cat_dict["product_sales"], 2 ) if cat_dict["product_sales"] != 0 else "-1"
+        cat_dict["aov"] = float(round((cat_dict["product_sales"] + cat_dict["product_sales_b2b"]) / (cat_dict["units_sold"] + cat_dict["units_sold_b2b"]), 2)) if (cat_dict["units_sold"] + cat_dict["units_sold_b2b"]) != 0 else "-1"
+        cat_dict["cr_percent"] = float(round( category_br.units_ordered.sum() * 100 / category_br.total_sessions.sum(), 2 )) if category_br.total_sessions.sum() != 0 else -1
+        cat_dict["ctr_percent"] = float(round( cat_dict["ad_clicks"] * 100 / cat_dict["ad_impressions"], 2 )) if cat_dict["ad_impressions"] != 0 else -1
+        cat_dict["ad_cr_percent"] = float(round( cat_dict["ad_units_ordered"] * 100 / cat_dict["ad_impressions"], 2 )) if cat_dict["ad_impressions"] != 0 else -1
+        cat_dict["ad_cpc"] = float(round( cat_dict["ad_spend"] / cat_dict["ad_clicks"], 2 )) if cat_dict["ad_clicks"] != 0 else "-1"
+        cat_dict["ad_acos"] = float(round( cat_dict["ad_spend"] * 100 / cat_dict["ad_product_sales"], 2 )) if cat_dict["ad_product_sales"] != 0 else "-1"
+        cat_dict["tacos"] = float(round( cat_dict["ad_spend"] * 100 / cat_dict["product_sales"], 2 )) if cat_dict["product_sales"] != 0 else "-1"
 
         output_category_list.append(cat_dict)
 
