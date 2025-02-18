@@ -65,7 +65,7 @@ class RouterHandler(BaseHTTPRequestHandler):
         logger.error(f"Error for {client_address}: {error_msg}")
 
     def do_GET(self):
-        self.__log_request_info()
+        self._log_request_info()
         # Parse the URL
         parsed_path = urlparse(self.path)
         path = parsed_path.path
@@ -81,7 +81,7 @@ class RouterHandler(BaseHTTPRequestHandler):
             self.handle_404()
 
     def do_POST(self):
-        self.__log_request_info()
+        self._log_request_info()
         parsed_path = urlparse(self.path)
         path = parsed_path.path
         query_params = parse_qs(parsed_path.query)
