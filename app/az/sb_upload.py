@@ -24,8 +24,6 @@ def upload_sb_data(sb, client_name):
 
     last_value = get_last_value()
     last_value = last_value if last_value != None else 0
-    print("last_value: ", last_value)
-    client_name = "Himanshu"
 
     campaign_cat_map = get_mapper_file(client_name, "campaign_mapper")
 
@@ -72,7 +70,6 @@ def upload_sb_data(sb, client_name):
 
     values_list = []
     all_dates = sb.date.unique().tolist()
-    print(all_dates)
 
     id_val = last_value
 
@@ -94,7 +91,6 @@ def upload_sb_data(sb, client_name):
                 dashboard_type,
                 json.dumps(constant_val),
                 json.dumps(values)))
-        print(id_val)
 
     demo_conn = psycopg2.connect(**DEMO_DB_CONFIG)
     demo_cur = demo_conn.cursor()

@@ -104,6 +104,7 @@ class RouterHandler(BaseHTTPRequestHandler):
             # Read the file content
             file_content = file_item.file.read()
             file_extension = os.path.splitext(file_item.filename)[1].lower()
+            client_name = form.getvalue("client_name")
 
             # Process the file based on its type
             if file_extension == '.csv':
@@ -111,7 +112,7 @@ class RouterHandler(BaseHTTPRequestHandler):
             else:
                 raise ValueError(f"Unknown action: {action}")
 
-            return df
+            return df, client_name
         except Exception as e:
             error_response = {"error": str(e)}
             self.send_response_content(
@@ -122,9 +123,9 @@ class RouterHandler(BaseHTTPRequestHandler):
 
     def handle_az_sb_upload(self, params):
         try:
-            calculated_df = self._get_df_from_upload(params)
+            calculated_df, client_name = self._get_df_from_upload(params)
 
-            response_data = upload_sb_data(calculated_df, "Himanshu")
+            response_data = upload_sb_data(calculated_df, client_name)
 
             self.send_response_content(
                 json.dumps(response_data, indent=2),
@@ -140,9 +141,9 @@ class RouterHandler(BaseHTTPRequestHandler):
 
     def handle_az_map_upload(self, params):
         try:
-            calculated_df = self._get_df_from_upload(params)
+            calculated_df, client_name = self._get_df_from_upload(params)
 
-            response_data = upload_asin_cat_map(calculated_df, "Himanshu")
+            response_data = upload_asin_cat_map(calculated_df, client_name)
 
             self.send_response_content(
                 json.dumps(response_data, indent=2),
@@ -158,7 +159,7 @@ class RouterHandler(BaseHTTPRequestHandler):
 
     def handle_az_campaign_map_upload(self, params):
         try:
-            calculated_df = self._get_df_from_upload(params)
+            calculated_df, client_name = self._get_df_from_upload(params)
 
             response_data = upload_campaign_cat_map(calculated_df, "Himanshu")
 
@@ -176,9 +177,9 @@ class RouterHandler(BaseHTTPRequestHandler):
 
     def handle_az_sp_upload(self, params):
         try:
-            calculated_df = self._get_df_from_upload(params)
+            calculated_df, client_name = self._get_df_from_upload(params)
 
-            response_data = upload_sp_data(calculated_df, "Himanshu")
+            response_data = upload_sp_data(calculated_df, client_name)
 
             self.send_response_content(
                 json.dumps(response_data, indent=2),
@@ -194,9 +195,9 @@ class RouterHandler(BaseHTTPRequestHandler):
 
     def handle_az_sd_upload(self, params):
         try:
-            calculated_df = self._get_df_from_upload(params)
+            calculated_df, client_name = self._get_df_from_upload(params)
 
-            response_data = upload_sd_data(calculated_df, "Himanshu")
+            response_data = upload_sd_data(calculated_df, client_name)
 
             self.send_response_content(
                 json.dumps(response_data, indent=2),
@@ -212,7 +213,7 @@ class RouterHandler(BaseHTTPRequestHandler):
 
     def handle_az_br_upload(self, params):
         try:
-            calculated_df = self._get_df_from_upload(params)
+            calculated_df, client_name = self._get_df_from_upload(params)
 
             response_data = []
 
@@ -230,14 +231,41 @@ class RouterHandler(BaseHTTPRequestHandler):
 
     def handle_dashboard_metrics(self, params):
         try:
-            print(1.1)
-            calculated_df = self._get_df_from_upload(params)
-            v = get_date_file_with_type(
-                "Himanshu", "sponsored_products", "2025-01-04", "2025-01-28")
-            print(1.2)
+            # Parse the multipart form data
+            content_type = self.headers.get('Content-Type')
+
+            if not content_type or not content_type.startswith('multipart/form-data'):
+                raise ValueError("Invalid content type. Must be multipart/form-data")
+
+            # Parse the form data
+            form = cgi.FieldStorage(
+                fp=self.rfile,
+                headers=self.headers,
+                environ={
+                    'REQUEST_METHOD': 'POST',
+                    'CONTENT_TYPE': self.headers['Content-Type'],
+                }
+            )
+
+            # Get the uploaded file
+            file_item = form['file']
+
+            # Read the file content
+            file_content = file_item.file.read()
+            file_extension = os.path.splitext(file_item.filename)[1].lower()
+
+            # Process the file based on its type
+            if file_extension == '.csv':
+                df = pd.read_csv(io.BytesIO(file_content))
+            else:
+                raise ValueError(f"Unknown action: {action}")
+
+            start_date = form.getvalue("start_date")
+            end_date = form.getvalue("end_date")
+            client_name = form.getvalue("client_name")
 
             response_data = calculate_complete_category_metrics(
-                calculated_df, "Himanshu", "2025-01-01", "2025-01-31")
+                df, client_name, start_date, end_date)
 
             self.send_response_content(
                 json.dumps(response_data, indent=2),

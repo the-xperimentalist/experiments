@@ -6,26 +6,6 @@ import psycopg2
 from ..utils import get_last_value
 from ..config import DEMO_DB_CONFIG
 
-INSERT_QUERY = """
-    INSERT INTO public.api_marketplaceclientsinternaldata (
-        id,
-        date,
-        dashboard_type,
-        constant,
-        values,
-        created_at,
-        updated_at
-    )
-    VALUES (
-        1,
-        '2025-01-01 00:00:00'::timestamp,
-        'az',
-        '{"client_name": "c1", "data_type": "sb"}'::jsonb,
-        '{"cost_type": "cpc", "clicks": 0, "impressions": 0}'::jsonb,
-        CURRENT_TIMESTAMP,
-        CURRENT_TIMESTAMP
-    );
-"""
 
 def upload_campaign_cat_map(campaign_mapper, client_name):
     """

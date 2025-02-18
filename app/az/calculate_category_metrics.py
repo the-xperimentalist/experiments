@@ -144,22 +144,11 @@ def calculate_complete_category_metrics(br, client_name, start_date, end_date):
     # to_calculate_values - units_sold, sales, aov, page_views, sessions, cr_percent, ad_spends, organic_sales,
     # ad_sales, impressions, clicks, ad_units, ctr, ad_cr_percent, cpc, acos, tacos
 
-    print("S1")
-    start_date = "2025-01-01"
-    end_date = "2025-01-31"
-
-    print("S2")
-
     all_categories = br.category.unique().tolist()
 
     filtered_sd = sd[(sd["date"] >= start_date) & (sd["date"] <= end_date)]
-    print("S2.1")
     filtered_sp = sp[(sp["date"] >= start_date) & (sp["date"] <= end_date)]
-    print("S2.2")
     filtered_sb = sb[(sb["date"] >= start_date) & (sb["date"] <= end_date)]
-    print("S2.3")
-
-    print("S3")
 
     category_list = []
     for category in all_categories:
@@ -182,28 +171,14 @@ def calculate_complete_category_metrics(br, client_name, start_date, end_date):
         cat_dict["ad_spend"] = round(float(filtered_category_sb.ad_spend.sum() + filtered_category_sp.ad_spend.sum() + filtered_category_sd.ad_spend.sum()), 2)
         cat_dict["ad_units_ordered"] = int(filtered_category_sb.units_ordered.sum() + filtered_category_sp.units_ordered.sum() + filtered_category_sd.units_ordered.sum())
         cat_dict["ad_product_sales"] = round(float(filtered_category_sb.product_sales.sum() + filtered_category_sp.product_sales.sum() + filtered_category_sd.product_sales.sum()), 2)
-        print(1.6)
         cat_dict["aov"] = round((cat_dict["product_sales"] + cat_dict["product_sales_b2b"]) / (cat_dict["units_sold"] + cat_dict["units_sold_b2b"]), 2) if (cat_dict["units_sold"] + cat_dict["units_sold_b2b"]) != 0 else "-1"
-        print(1.6)
         cat_dict["cr_percent"] = round( category_br.units_ordered.sum() * 100 / category_br.total_sessions.sum(), 2 )
-        print(1.6)
         cat_dict["ctr_percent"] = round( cat_dict["ad_clicks"] * 100 / cat_dict["ad_impressions"], 2 ) if cat_dict["ad_impressions"] != 0 else -1
-        print(1.7)
         cat_dict["ad_cr_percent"] = round( cat_dict["ad_units_ordered"] * 100 / cat_dict["ad_impressions"], 2 ) if cat_dict["ad_impressions"] != 0 else -1
-        print(1.6)
         cat_dict["ad_cpc"] = round( cat_dict["ad_spend"] / cat_dict["ad_clicks"], 2 ) if cat_dict["ad_clicks"] != 0 else "-1"
-        print(1.6)
         cat_dict["ad_acos"] = round( cat_dict["ad_spend"] * 100 / cat_dict["ad_product_sales"], 2 ) if cat_dict["ad_product_sales"] != 0 else "-1"
         cat_dict["tacos"] = round( cat_dict["ad_spend"] * 100 / cat_dict["product_sales"], 2 ) if cat_dict["product_sales"] != 0 else "-1"
 
         category_list.append(cat_dict)
 
-    print("Done")
     return category_list
-
-
-    # useful br columns - app_sessions, app_b2b_sessions, browser_sessions, browser_sessions_b2b, total_sessions,
-    # total_b2b_sessions, app_page_views, app_page_views_b2b, browser_page_views, browser_page_views_b2b,
-    # total_page_views, total_page_views_b2b, units_ordered, units_ordered_b2b, product_sales, product_sales_b2b,
-    # asin, category, brand, title
-    pass
