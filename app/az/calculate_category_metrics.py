@@ -12,7 +12,6 @@ def calculate_complete_category_metrics(br, client_name, start_date, end_date, c
 
     last_value = get_last_value()
     last_value = last_value if last_value != None else 0
-    client_name = "Himanshu"
 
     asin_cat_map = get_mapper_file(client_name, "asin_mapper")
 
@@ -148,7 +147,7 @@ def calculate_complete_category_metrics(br, client_name, start_date, end_date, c
     filtered_sp = sp[(sp["date"] >= start_date) & (sp["date"] <= end_date)]
     filtered_sb = sb[(sb["date"] >= start_date) & (sb["date"] <= end_date)]
 
-    category_list = []
+    output_category_list = []
     for category in category_list:
         filtered_category_sb = filtered_sb[filtered_sb["category"] == category]
         filtered_category_sp = filtered_sp[filtered_sp["category"] == category]
@@ -177,6 +176,6 @@ def calculate_complete_category_metrics(br, client_name, start_date, end_date, c
         cat_dict["ad_acos"] = round( cat_dict["ad_spend"] * 100 / cat_dict["ad_product_sales"], 2 ) if cat_dict["ad_product_sales"] != 0 else "-1"
         cat_dict["tacos"] = round( cat_dict["ad_spend"] * 100 / cat_dict["product_sales"], 2 ) if cat_dict["product_sales"] != 0 else "-1"
 
-        category_list.append(cat_dict)
+        output_category_list.append(cat_dict)
 
-    return category_list
+    return output_category_list
