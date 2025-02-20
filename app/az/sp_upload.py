@@ -67,7 +67,6 @@ def upload_sp_data(sp, client_name):
 
     values_list = []
     all_dates = sp.date.unique().tolist()
-    print(all_dates)
 
     id_val = last_value
 
@@ -89,7 +88,6 @@ def upload_sp_data(sp, client_name):
                 dashboard_type,
                 json.dumps(constant_val),
                 json.dumps(values)))
-        print(id_val)
 
     demo_conn = psycopg2.connect(**DEMO_DB_CONFIG)
     demo_cur = demo_conn.cursor()

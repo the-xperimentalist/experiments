@@ -28,7 +28,6 @@ def upload_asin_cat_map(asin_mapper, client_name):
 
     asin_cat_map = {}
     for i in range(asin_mapper.shape[0]):
-        # print(i)
         v = asin_mapper.iloc[i]
         asin_cat_map[asin_mapper.iloc[i]["ASIN"]] = {
             "category": asin_mapper.iloc[i]["Category"] if asin_mapper.iloc[i]["Category"] else "",
@@ -54,7 +53,6 @@ def upload_asin_cat_map(asin_mapper, client_name):
 
     demo_conn = psycopg2.connect(**DEMO_DB_CONFIG)
     demo_cur = demo_conn.cursor()
-    # print(insert_query)
     insert_query = f"""
     INSERT INTO public.api_marketplaceclientsinternaldata (
         id,

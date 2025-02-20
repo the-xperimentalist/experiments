@@ -53,7 +53,6 @@ def upload_sd_data(sd, client_name):
 
     sd["ad_spend"] = sd["Spend"].apply(lambda x: float(x.replace(',', '').replace('₹', '')) if isinstance(x, str) else x)
     del sd["Spend"]
-    print(2)
 
 
     sd["category"] = sd["asin"].apply(lambda x: asin_cat_map.get(x, {}).get("category"))
@@ -71,7 +70,6 @@ def upload_sd_data(sd, client_name):
 
     values_list = []
     all_dates = sd.date.unique().tolist()
-    print(all_dates)
 
     id_val = last_value
 
@@ -93,7 +91,6 @@ def upload_sd_data(sd, client_name):
                 dashboard_type,
                 json.dumps(constant_val),
                 json.dumps(values)))
-        print(id_val)
     demo_conn = psycopg2.connect(**DEMO_DB_CONFIG)
     demo_cur = demo_conn.cursor()
 

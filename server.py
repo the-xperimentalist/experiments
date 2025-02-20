@@ -141,11 +141,12 @@ class RouterHandler(BaseHTTPRequestHandler):
             # Process the file based on its type
             if file_extension == '.csv':
                 df = pd.read_csv(io.BytesIO(file_content))
+            elif file_extension == 'xlsx':
+                df = pd.read_csv(io.BytesIO(file_content))
             else:
                 raise ValueError(f"Unknown file")
 
             logger.info(f"Processing file: {file_item.filename}, Client: {client_name}")
-            logger.info(f"Date range: {start_date} to {end_date}")
             return df, client_name
         except Exception as e:
             error_msg = str(e)
@@ -306,7 +307,7 @@ class RouterHandler(BaseHTTPRequestHandler):
         try:
             calculated_df, client_name = self._get_df_from_upload(params)
 
-            response_data = []
+            response_data = upload_br_data(calculated_df, client_name)
 
             self.send_response_content(
                 json.dumps(response_data, indent=2),
@@ -342,19 +343,6 @@ class RouterHandler(BaseHTTPRequestHandler):
                 }
             )
 
-            # Get the uploaded file
-            file_item = form['file']
-
-            # Read the file content
-            file_content = file_item.file.read()
-            file_extension = os.path.splitext(file_item.filename)[1].lower()
-
-            # Process the file based on its type
-            if file_extension == '.csv':
-                df = pd.read_csv(io.BytesIO(file_content))
-            else:
-                raise ValueError(f"Unknown file")
-
             start_date = form.getvalue("start_date")
             end_date = form.getvalue("end_date")
             client_name = form.getvalue("client_name")
@@ -362,9 +350,9 @@ class RouterHandler(BaseHTTPRequestHandler):
 
             modified_category_list = category_list.split(",")
             response_data = calculate_complete_category_metrics(
-                df, client_name, start_date, end_date, modified_category_list)
+                client_name, start_date, end_date, modified_category_list)
 
-            logger.info(f"Processed file: {file_item.filename}, Client: {client_name}, Date range: {start_date} to {end_date}, category list: {category_list}")
+            logger.info(f"Client: {client_name}, Date range: {start_date} to {end_date}, category list: {category_list}")
 
             self.send_response_content(
                 json.dumps(response_data, indent=2),

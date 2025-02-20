@@ -57,9 +57,6 @@ def upload_sb_data(sb, client_name):
 
     sb = sb[["campaign_name", "date", "cost_type", "clicks", "ad_spend", "impressions", "units_ordered", "product_sales", "category", "brand"]]
 
-    min_date = sb.date.min()
-    max_date = sb.date.max()
-
     # id - last value
     # date - looped through
     # dashboard type - az reporting
