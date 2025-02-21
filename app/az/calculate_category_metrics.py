@@ -35,6 +35,8 @@ def calculate_complete_category_metrics(client_name, start_date, end_date, categ
     br = pd.DataFrame(br_data)
     br["date"] = pd.to_datetime(br["date"])
 
+    dates_list = br.date.unique().tolist()
+
     sponsored_brands = get_date_file_with_type(client_name, "sponsored_brands", start_date, end_date)
     sd_data = []
     for item in sponsored_brands:
@@ -103,9 +105,74 @@ def calculate_complete_category_metrics(client_name, start_date, end_date, categ
     # to_calculate_values - units_sold, sales, aov, page_views, sessions, cr_percent, ad_spends, organic_sales,
     # ad_sales, impressions, clicks, ad_units, ctr, ad_cr_percent, cpc, acos, tacos
 
-    filtered_sd = sd[(sd["date"] >= start_date) & (sd["date"] <= end_date)]
-    filtered_sp = sp[(sp["date"] >= start_date) & (sp["date"] <= end_date)]
-    filtered_sb = sb[(sb["date"] >= start_date) & (sb["date"] <= end_date)]
+    filtered_sd = sd[(sd["date"] >= start_date) & (sd["date"] <= end_date) & sd["category"].isin(category_list)]
+    filtered_sp = sp[(sp["date"] >= start_date) & (sp["date"] <= end_date) & sp["category"].isin(category_list)]
+    filtered_sb = sb[(sb["date"] >= start_date) & (sb["date"] <= end_date) & sb["category"].isin(category_list)]
+    filtered_br = br[(br["date"] >= start_date) & (br["date"] <= end_date) & br["category"].isin(category_list)]
+
+    output_data = {}
+    output_data["units_sold"] = []
+    output_data["product_sales"] = []
+    output_data["total_page_views"] = []
+    output_data["total_sessions"] = []
+    output_data["ad_impressions"] = []
+    output_data["ad_clicks"] = []
+    output_data["ad_spend"] = []
+    output_data["ad_units_ordered"] = []
+    output_data["ad_product_sales"] = []
+    output_data["cr_percent"] = []
+    output_data["ctr_percent"] = []
+    output_data["ad_acos"] = []
+    output_data["tacos"] = []
+    output_data["aov"] = []
+    output_data["ad_clicks"] = []
+
+    for date_val in dates_list:
+        filtered_date_sd = filtered_sd[filtered_sd["date"] == date_val]
+        filtered_date_sp = filtered_sp[filtered_sp["date"] == date_val]
+        filtered_date_sb = filtered_sb[filtered_sb["date"] == date_val]
+        filtered_date_br = filtered_br[filtered_br["date"] == date_val]
+
+        date_units_sold = int(filtered_date_br.units_ordered.sum())
+        output_data["units_sold"].append(date_units_sold)
+
+        date_product_sales = float(filtered_date_br.product_sales.sum())
+        output_data["product_sales"].append(date_product_sales)
+
+        date_total_page_views = int(filtered_date_br.total_page_views.sum())
+        output_data["total_page_views"].append(date_total_page_views)
+
+        date_total_sessions = int(filtered_date_br.total_sessions.sum())
+        output_data["total_sessions"].append(date_total_sessions)
+
+        date_ad_impressions = int(filtered_date_sb.impressions.sum() + filtered_date_sp.impressions.sum() + filtered_date_sd.impressions.sum())
+        output_data["ad_impressions"].append(date_ad_impressions)
+
+        date_ad_clicks = int(filtered_date_sd.clicks.sum() + filtered_date_sp.clicks.sum() + filtered_date_sb.clicks.sum())
+        output_data["ad_clicks"].append(date_ad_clicks)
+
+        date_ad_spend = float(filtered_date_sb.ad_spend.sum() + filtered_date_sp.ad_spend.sum() + filtered_date_sd.ad_spend.sum())
+        output_data["ad_spend"].append(date_ad_spend)
+
+        date_ad_units_ordered = int(filtered_date_sd.units_ordered.sum() + filtered_date_sp.units_ordered.sum() + filtered_date_sb.units_ordered.sum())
+        output_data["ad_units_ordered"].append(date_ad_units_ordered)
+
+        date_ad_product_sales = float(filtered_date_sb.product_sales.sum() + filtered_date_sp.product_sales.sum() + filtered_date_sd.product_sales.sum())
+        output_data["ad_product_sales"].append(date_ad_product_sales)
+
+        date_aov = round(date_product_sales / date_units_sold, 2) if date_units_sold != 0 else 0
+        output_data["aov"].append(date_aov)
+
+        date_cr_percent = round(date_units_sold * 100 / date_total_sessions if date_total_sessions != 0 else 0, 2)
+        output_data["cr_percent"].append(date_cr_percent)
+
+        date_ad_acos = round(date_ad_spend * 100 / date_ad_product_sales, 2) if date_ad_product_sales != 0 else 0
+        output_data["ad_acos"].append(date_ad_acos)
+
+        date_tacos = round(date_ad_spend * 100 / date_product_sales, 2) if date_product_sales != 0 else 0
+        output_data["tacos"].append(date_tacos)
+
+    output_data["dates"] = [i.strftime('%Y-%m-%d') for i in dates_list]
 
     output_category_list = []
     for category in category_list:
@@ -134,4 +201,4 @@ def calculate_complete_category_metrics(client_name, start_date, end_date, categ
 
         output_category_list.append(cat_dict)
 
-    return output_category_list
+    return {"date": output_data, "category": output_category_list}
