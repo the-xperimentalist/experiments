@@ -15,14 +15,14 @@ def get_mapper_file_check(client_name, dashboard_type, data_type):
     demo_cur.close()
     demo_conn.close()
 
-def get_mapper_file(client_name, file_type):
+def get_mapper_file(client_name, file_type, dashboard_type):
     demo_conn = psycopg2.connect(**DEMO_DB_CONFIG)
     demo_cur = demo_conn.cursor()
     query = f"""
         SELECT values
         FROM public.api_marketplaceclientsinternaldata
         WHERE constant->>'data_type' = '{file_type}' AND constant->>'client_name' = '{client_name}'
-        AND dashboard_type = 'AZ_REPORTING'
+        AND dashboard_type = '{dashboard_type}'
     """
     demo_cur.execute(query)
     data = demo_cur.fetchall()
@@ -32,14 +32,14 @@ def get_mapper_file(client_name, file_type):
     demo_conn.close()
     return data[0][0]
 
-def get_date_file_with_type(client_name, file_type, start_date, end_date):
+def get_date_file_with_type(client_name, file_type, start_date, end_date, dashboard_type):
     demo_conn = psycopg2.connect(**DEMO_DB_CONFIG)
     demo_cur = demo_conn.cursor()
     query = f"""
         SELECT date, values
         FROM public.api_marketplaceclientsinternaldata
         WHERE constant->>'data_type' = '{file_type}' AND constant->>'client_name' = '{client_name}'
-        AND dashboard_type = 'AZ_REPORTING'
+        AND dashboard_type = '{dashboard_type}'
         AND date >= '{start_date}' AND date <= '{end_date}'
     """
     demo_cur.execute(query)

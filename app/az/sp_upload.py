@@ -25,7 +25,7 @@ def upload_sp_data(sp, client_name):
     last_value = get_last_value()
     last_value = last_value if last_value != None else 0
 
-    asin_cat_map = get_mapper_file(client_name, "asin_mapper")
+    asin_cat_map = get_mapper_file(client_name, "asin_mapper", "AZ_REPORTING")
 
     sp["date"] = pd.to_datetime(sp["Date"])
     del sp["Date"]

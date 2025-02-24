@@ -10,6 +10,7 @@ import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 from app.az import *
+from app.fk import *
 from app.utils import get_last_value, get_date_file_with_type
 
 
@@ -41,7 +42,7 @@ class RouterHandler(BaseHTTPRequestHandler):
         '/experiments': 'handle_home'
     }
 
-    post_routes = {
+    az_post_routes = {
         '/experiments/api/az/upload/sponsored_brands': 'handle_az_sb_upload',
         '/experiments/api/az/upload/sponsored_products': 'handle_az_sp_upload',
         '/experiments/api/az/upload/sponsored_display': 'handle_az_sd_upload',
@@ -52,7 +53,19 @@ class RouterHandler(BaseHTTPRequestHandler):
         '/experiments/api/az/get_feature_list_data': 'handle_feature_list_data_get'
     }
 
-    routes = {**get_routes, **post_routes}
+    fk_post_routes = {
+        '/experiments/api/fk/upload/fsn_map': 'handle_fk_map_upload',
+        '/experiments/api/fk/upload/orders': 'handle_fk_orders_upload',
+        '/experiments/api/fk/upload/pla_campaign_report': 'handle_fk_pla_campaign_report_upload',
+        '/experiments/api/fk/request_category_metrics': 'handle_fk_dashboard_metrics',
+        '/experiments/api/fk/upload/pla_consolidated_report': 'handle_fk_pla_consolidated_daily_upload'
+    }
+
+    blinkit_post_routes = {
+        '/experiments/api/blinkit/upload/sales_summary': 'handle_blinkit_ss_upload'
+    }
+
+    routes = {**get_routes, **az_post_routes, **fk_post_routes, **blinkit_post_routes}
 
     def _log_request_info(self):
         """Log information about the incoming request"""
@@ -87,7 +100,7 @@ class RouterHandler(BaseHTTPRequestHandler):
         path = parsed_path.path
         query_params = parse_qs(parsed_path.query)
 
-        if path in self.post_routes:
+        if path in {**self.az_post_routes, **self.blinkit_post_routes, **self.fk_post_routes}:
             handler_name = self.routes[path]
             handler = getattr(self, handler_name, self.handle_404)
             handler(query_params)
@@ -111,7 +124,52 @@ class RouterHandler(BaseHTTPRequestHandler):
         """
         self.send_response_content(content)
 
-    def _get_df_from_upload(self, params):
+    def handle_fk_dashboard_metrics(self, params):
+        try:
+            # Parse the multipart form data
+            content_type = self.headers.get('Content-Type')
+
+            if not content_type or not content_type.startswith('multipart/form-data'):
+                error_msg = "Invalid content type. Must be multipart/form-data"
+                self._log_error_info(error_msg)
+                raise ValueError("Invalid content type. Must be multipart/form-data")
+
+            # Parse the form data
+            form = cgi.FieldStorage(
+                fp=self.rfile,
+                headers=self.headers,
+                environ={
+                    'REQUEST_METHOD': 'POST',
+                    'CONTENT_TYPE': self.headers['Content-Type'],
+                }
+            )
+
+            start_date = form.getvalue("start_date")
+            end_date = form.getvalue("end_date")
+            client_name = form.getvalue("client_name")
+            category_list = form.getvalue("category_list")
+
+            modified_category_list = category_list.split(",")
+            response_data = calculate_fk_complete_category_metrics(
+                client_name, start_date, end_date, modified_category_list)
+
+            logger.info(f"Client: {client_name}, Date range: {start_date} to {end_date}, category list: {category_list}")
+
+            self.send_response_content(
+                json.dumps(response_data, indent=2),
+                content_type='application/json'
+            )
+        except Exception as e:
+            error_msg = str(e)
+            self._log_error_info(error_msg)
+            error_response = {"error": str(e)}
+            self.send_response_content(
+                json.dumps(error_response),
+                status=400,
+                content_type='application/json'
+            )
+
+    def _get_df_from_upload(self, params, sheet_name=None, skiprows=0):
         try:
             # Parse the multipart form data
             content_type = self.headers.get('Content-Type')
@@ -131,7 +189,6 @@ class RouterHandler(BaseHTTPRequestHandler):
 
             # Get the uploaded file
             file_item = form['file']
-            action = form.getvalue('action', 'preview')
 
             # Read the file content
             file_content = file_item.file.read()
@@ -140,14 +197,94 @@ class RouterHandler(BaseHTTPRequestHandler):
 
             # Process the file based on its type
             if file_extension == '.csv':
-                df = pd.read_csv(io.BytesIO(file_content))
-            elif file_extension == 'xlsx':
-                df = pd.read_csv(io.BytesIO(file_content))
+                df = pd.read_csv(io.BytesIO(file_content), skiprows=skiprows)
+            elif file_extension in ['.xlsx', '.xls']:
+                df = pd.read_excel(io.BytesIO(file_content), sheet_name, skiprows=skiprows) if sheet_name else pd.read_excel(io.BytesIO(file_content), skiprows=skiprows)
             else:
                 raise ValueError(f"Unknown file")
 
             logger.info(f"Processing file: {file_item.filename}, Client: {client_name}")
             return df, client_name
+        except Exception as e:
+            error_msg = str(e)
+            self._log_error_info(error_msg)
+            error_response = {"error": str(e)}
+            self.send_response_content(
+                json.dumps(error_response),
+                status=400,
+                content_type='application/json'
+            )
+
+    def handle_fk_map_upload(self, params):
+        try:
+            calculated_df, client_name = self._get_df_from_upload(params)
+
+            response_data = upload_fsn_cat_map(calculated_df, client_name)
+
+            self.send_response_content(
+                json.dumps(response_data, indent=2),
+                content_type='application/json'
+            )
+        except Exception as e:
+            error_msg = str(e)
+            self._log_error_info(error_msg)
+            error_response = {"error": str(e)}
+            self.send_response_content(
+                json.dumps(error_response),
+                status=400,
+                content_type='application/json'
+            )
+
+    def handle_fk_orders_upload(self, params):
+        try:
+            calculated_df, client_name = self._get_df_from_upload(params, sheet_name="Orders")
+
+            response_data = upload_fk_orders(calculated_df, client_name)
+
+            self.send_response_content(
+                json.dumps(response_data, indent=2),
+                content_type='application/json'
+            )
+        except Exception as e:
+            error_msg = str(e)
+            self._log_error_info(error_msg)
+            error_response = {"error": str(e)}
+            self.send_response_content(
+                json.dumps(error_response),
+                status=400,
+                content_type='application/json'
+            )
+
+    def handle_fk_pla_campaign_report_upload(self, params):
+        try:
+            calculated_df, client_name = self._get_df_from_upload(params, skiprows=2)
+
+            response_data = upload_pla_campaign_report(calculated_df, client_name)
+
+            self.send_response_content(
+                json.dumps(response_data, indent=2),
+                content_type='application/json'
+            )
+        except Exception as e:
+            error_msg = str(e)
+            self._log_error_info(error_msg)
+            error_response = {"error": str(e)}
+            self.send_response_content(
+                json.dumps(error_response),
+                status=400,
+                content_type='application/json'
+            )
+
+    def handle_fk_pla_consolidated_daily_upload(self, params):
+        try:
+            calculated_df, client_name = self._get_df_from_upload(params, skiprows=2)
+
+            response_data = upload_pla_consolidated_daily_report(calculated_df, client_name)
+
+            self.send_response_content(
+                json.dumps(response_data, indent=2),
+                content_type='application/json'
+            )
         except Exception as e:
             error_msg = str(e)
             self._log_error_info(error_msg)
@@ -373,6 +510,26 @@ class RouterHandler(BaseHTTPRequestHandler):
         logger.warning(error_msg)
         content = "<h1>404 Not Found</h1><p>The requested route does not exist.</p>"
         self.send_response_content(content, status=404)
+
+    def handle_blinkit_ss_upload(self, params):
+        try:
+            calculated_df, client_name = self._get_df_from_upload(params)
+
+            response_data = []
+
+            self.send_response_content(
+                json.dumps(response_data, indent=2),
+                content_type='application/json'
+            )
+        except Exception as e:
+            error_msg = str(e)
+            self._log_error_info(error_msg)
+            error_response = {"error": str(e)}
+            self.send_response_content(
+                json.dumps(error_response),
+                status=400,
+                content_type='application/json'
+            )
 
 def run_server(port=8000):
     server_address = ('0.0.0.0', port)

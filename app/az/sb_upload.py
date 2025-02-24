@@ -25,7 +25,7 @@ def upload_sb_data(sb, client_name):
     last_value = get_last_value()
     last_value = last_value if last_value != None else 0
 
-    campaign_cat_map = get_mapper_file(client_name, "campaign_mapper")
+    campaign_cat_map = get_mapper_file(client_name, "campaign_mapper", "AZ_REPORTING")
 
     sb["date"] = pd.to_datetime(sb["Date"])
     del sb["Date"]

@@ -3,11 +3,16 @@ import json
 import pandas as pd
 import psycopg2
 
-from ..utils import get_mapper_file, split_json_list, get_date_file_with_type
+from ..utils import get_last_value, get_mapper_file, split_json_list, get_date_file_with_type
 from ..config import DEMO_DB_CONFIG
 
 
-def calculate_complete_category_metrics(client_name, start_date, end_date, category_list):
+def calculate_complete_sku_metrics(client_name, start_date, end_date, asin_list):
+
+    last_value = get_last_value()
+    last_value = last_value if last_value != None else 0
+
+    asin_cat_map = get_mapper_file(client_name, "asin_mapper", "AZ_REPORTING")
 
     business_report = get_date_file_with_type(client_name, "business_report", start_date, end_date, "AZ_REPORTING")
     br_data = []
@@ -29,6 +34,9 @@ def calculate_complete_category_metrics(client_name, start_date, end_date, categ
             br_data.append(br_dict)
     br = pd.DataFrame(br_data)
     br["date"] = pd.to_datetime(br["date"])
+    total_sales = int(br.units_ordered.sum())
+    br["asin_units_share"] = br["units_ordered"].apply(lambda x: float(x / total_sales))
+    # for item in
 
     dates_list = br.date.unique().tolist()
 
@@ -100,10 +108,11 @@ def calculate_complete_category_metrics(client_name, start_date, end_date, categ
     # to_calculate_values - units_sold, sales, aov, page_views, sessions, cr_percent, ad_spends, organic_sales,
     # ad_sales, impressions, clicks, ad_units, ctr, ad_cr_percent, cpc, acos, tacos
 
-    filtered_sd = sd[(sd["date"] >= start_date) & (sd["date"] <= end_date) & sd["category"].isin(category_list)]
-    filtered_sp = sp[(sp["date"] >= start_date) & (sp["date"] <= end_date) & sp["category"].isin(category_list)]
-    filtered_sb = sb[(sb["date"] >= start_date) & (sb["date"] <= end_date) & sb["category"].isin(category_list)]
-    filtered_br = br[(br["date"] >= start_date) & (br["date"] <= end_date) & br["category"].isin(category_list)]
+    filtered_sd = sd[(sd["date"] >= start_date) & (sd["date"] <= end_date) & sd["asin"].isin(asin_list)]
+    filtered_sp = sp[(sp["date"] >= start_date) & (sp["date"] <= end_date) & sp["asin"].isin(asin_list)]
+    filtered_br = br[(br["date"] >= start_date) & (br["date"] <= end_date) & br["asin"].isin(asin_list)]
+
+    filtered_sb = sb[(sb["date"] >= start_date) & (sb["date"] <= end_date)] # ASIN filter not added yet
 
     output_data = {}
     output_data["units_sold"] = []
@@ -120,12 +129,15 @@ def calculate_complete_category_metrics(client_name, start_date, end_date, categ
     output_data["ad_acos"] = []
     output_data["tacos"] = []
     output_data["aov"] = []
+    output_data["ad_clicks"] = []
 
     for date_val in dates_list:
         filtered_date_sd = filtered_sd[filtered_sd["date"] == date_val]
         filtered_date_sp = filtered_sp[filtered_sp["date"] == date_val]
-        filtered_date_sb = filtered_sb[filtered_sb["date"] == date_val]
         filtered_date_br = filtered_br[filtered_br["date"] == date_val]
+        date_sb = sb[sb[""]]
+
+        filtered_date_sb = filtered_sb[filtered_sb["date"] == date_val] # Without asin filter
 
         date_units_sold = int(filtered_date_br.units_ordered.sum())
         output_data["units_sold"].append(date_units_sold)
@@ -196,3 +208,4 @@ def calculate_complete_category_metrics(client_name, start_date, end_date, categ
         output_category_list.append(cat_dict)
 
     return {"date": output_data, "category": output_category_list}
+

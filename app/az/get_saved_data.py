@@ -12,7 +12,7 @@ def get_saved_data(client_name, start_date, end_date, category_list, file_type_l
     merge_on_cols = ["date", "category"]
     base_df = pd.DataFrame(columns = ["date", "clicks", "ad_spend", "impressions", "units_ordered", "product_sales", "category"])
     for file_type in file_type_list:
-        data_file = get_date_file_with_type(client_name, file_type, start_date, end_date)
+        data_file = get_date_file_with_type(client_name, file_type, start_date, end_date, "AZ_REPORTING")
         sd_data = []
         for item in data_file:
             date = item[0]
