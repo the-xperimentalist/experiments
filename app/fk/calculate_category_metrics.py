@@ -43,6 +43,7 @@ def calculate_fk_complete_category_metrics(client_name, start_date, end_date, ca
     orders_df = pd.DataFrame(orders_data)
     orders_df = orders_df[orders_df["category"].isin(category_list)]
     date_list = orders_df.date.unique().tolist()
+    date_list.sort()
 
     pla_consolidated = get_date_file_with_type(
         client_name, "pla_consolidated", start_date, end_date, "FK_REPORTING")
