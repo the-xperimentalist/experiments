@@ -59,7 +59,8 @@ class RouterHandler(BaseHTTPRequestHandler):
         '/experiments/api/fk/upload/orders': 'handle_fk_orders_upload',
         '/experiments/api/fk/upload/pla_campaign_report': 'handle_fk_pla_campaign_report_upload',
         '/experiments/api/fk/request_category_metrics': 'handle_fk_dashboard_metrics',
-        '/experiments/api/fk/upload/pla_consolidated_report': 'handle_fk_pla_consolidated_daily_upload'
+        '/experiments/api/fk/upload/pla_consolidated_report': 'handle_fk_pla_consolidated_daily_upload',
+        '/experiments/api/fk/request_sku_metrics': 'handle_fk_sku_metrics'
     }
 
     blinkit_post_routes = {
@@ -124,6 +125,51 @@ class RouterHandler(BaseHTTPRequestHandler):
         <p>Try visiting /about or /api/users</p>
         """
         self.send_response_content(content)
+
+    def handle_fk_sku_metrics(self, params):
+        try:
+            # Parse the multipart form data
+            content_type = self.headers.get('Content-Type')
+
+            if not content_type or not content_type.startswith('multipart/form-data'):
+                error_msg = "Invalid content type. Must be multipart/form-data"
+                self._log_error_info(error_msg)
+                raise ValueError("Invalid content type. Must be multipart/form-data")
+
+            # Parse the form data
+            form = cgi.FieldStorage(
+                fp=self.rfile,
+                headers=self.headers,
+                environ={
+                    'REQUEST_METHOD': 'POST',
+                    'CONTENT_TYPE': self.headers['Content-Type'],
+                }
+            )
+
+            start_date = form.getvalue("start_date")
+            end_date = form.getvalue("end_date")
+            client_name = form.getvalue("client_name")
+            fsn_list = form.getvalue("fsn_list")
+
+            modified_fsn_list = fsn_list.split(",")
+            response_data = calculate_fk_complete_sku_metrics(
+                client_name, start_date, end_date, modified_fsn_list)
+
+            logger.info(f"Client: {client_name}, Date range: {start_date} to {end_date}, fsn list: {fsn_list}")
+
+            self.send_response_content(
+                json.dumps(response_data, indent=2),
+                content_type='application/json'
+            )
+        except Exception as e:
+            error_msg = str(e)
+            self._log_error_info(error_msg)
+            error_response = {"error": str(e)}
+            self.send_response_content(
+                json.dumps(error_response),
+                status=400,
+                content_type='application/json'
+            )
 
     def handle_az_sku_dashboard_metrics(self, params):
         try:
