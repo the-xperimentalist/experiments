@@ -11,6 +11,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 from app.az import *
 from app.fk import *
+from app.blinkit import *
 from app.utils import get_last_value, get_date_file_with_type
 
 
@@ -80,6 +81,52 @@ class RouterHandler(BaseHTTPRequestHandler):
         client_address = self.client_address[0]
         logger.error(f"Error for {client_address}: {error_msg}")
 
+    def _get_df_from_upload(self, params, sheet_name=None, skiprows=0):
+        try:
+            # Parse the multipart form data
+            content_type = self.headers.get('Content-Type')
+
+            if not content_type or not content_type.startswith('multipart/form-data'):
+                raise ValueError("Invalid content type. Must be multipart/form-data")
+
+            # Parse the form data
+            form = cgi.FieldStorage(
+                fp=self.rfile,
+                headers=self.headers,
+                environ={
+                    'REQUEST_METHOD': 'POST',
+                    'CONTENT_TYPE': self.headers['Content-Type'],
+                }
+            )
+
+            # Get the uploaded file
+            file_item = form['file']
+
+            # Read the file content
+            file_content = file_item.file.read()
+            file_extension = os.path.splitext(file_item.filename)[1].lower()
+            client_name = form.getvalue("client_name")
+
+            # Process the file based on its type
+            if file_extension == '.csv':
+                df = pd.read_csv(io.BytesIO(file_content), skiprows=skiprows)
+            elif file_extension in ['.xlsx', '.xls']:
+                df = pd.read_excel(io.BytesIO(file_content), sheet_name, skiprows=skiprows) if sheet_name else pd.read_excel(io.BytesIO(file_content), skiprows=skiprows)
+            else:
+                raise ValueError(f"Unknown file")
+
+            logger.info(f"Processing file: {file_item.filename}, Client: {client_name}")
+            return df, client_name
+        except Exception as e:
+            error_msg = str(e)
+            self._log_error_info(error_msg)
+            error_response = {"error": str(e)}
+            self.send_response_content(
+                json.dumps(error_response),
+                status=400,
+                content_type='application/json'
+            )
+
     def do_GET(self):
         self._log_request_info()
         # Parse the URL
@@ -118,13 +165,32 @@ class RouterHandler(BaseHTTPRequestHandler):
         # Log response
         logger.info(f"Response sent: Status {status}, Content-Type: {content_type}")
 
-    # Route handlers
     def handle_home(self, params):
         content = """
         <h1>Welcome to the Home Page</h1>
         <p>Try visiting /about or /api/users</p>
         """
         self.send_response_content(content)
+
+    def handle_blinkit_ss_upload(self, params):
+        try:
+            calculated_df, client_name = self._get_df_from_upload(params, sheet_name="Sales Summary Information")
+
+            response_data = []
+
+            self.send_response_content(
+                json.dumps(response_data, indent=2),
+                content_type='application/json'
+            )
+        except Exception as e:
+            error_msg = str(e)
+            self._log_error_info(error_msg)
+            error_response = {"error": str(e)}
+            self.send_response_content(
+                json.dumps(error_response),
+                status=400,
+                content_type='application/json'
+            )
 
     def handle_fk_sku_metrics(self, params):
         try:
@@ -251,52 +317,6 @@ class RouterHandler(BaseHTTPRequestHandler):
                 json.dumps(response_data, indent=2),
                 content_type='application/json'
             )
-        except Exception as e:
-            error_msg = str(e)
-            self._log_error_info(error_msg)
-            error_response = {"error": str(e)}
-            self.send_response_content(
-                json.dumps(error_response),
-                status=400,
-                content_type='application/json'
-            )
-
-    def _get_df_from_upload(self, params, sheet_name=None, skiprows=0):
-        try:
-            # Parse the multipart form data
-            content_type = self.headers.get('Content-Type')
-
-            if not content_type or not content_type.startswith('multipart/form-data'):
-                raise ValueError("Invalid content type. Must be multipart/form-data")
-
-            # Parse the form data
-            form = cgi.FieldStorage(
-                fp=self.rfile,
-                headers=self.headers,
-                environ={
-                    'REQUEST_METHOD': 'POST',
-                    'CONTENT_TYPE': self.headers['Content-Type'],
-                }
-            )
-
-            # Get the uploaded file
-            file_item = form['file']
-
-            # Read the file content
-            file_content = file_item.file.read()
-            file_extension = os.path.splitext(file_item.filename)[1].lower()
-            client_name = form.getvalue("client_name")
-
-            # Process the file based on its type
-            if file_extension == '.csv':
-                df = pd.read_csv(io.BytesIO(file_content), skiprows=skiprows)
-            elif file_extension in ['.xlsx', '.xls']:
-                df = pd.read_excel(io.BytesIO(file_content), sheet_name, skiprows=skiprows) if sheet_name else pd.read_excel(io.BytesIO(file_content), skiprows=skiprows)
-            else:
-                raise ValueError(f"Unknown file")
-
-            logger.info(f"Processing file: {file_item.filename}, Client: {client_name}")
-            return df, client_name
         except Exception as e:
             error_msg = str(e)
             self._log_error_info(error_msg)
@@ -602,26 +622,6 @@ class RouterHandler(BaseHTTPRequestHandler):
         logger.warning(error_msg)
         content = "<h1>404 Not Found</h1><p>The requested route does not exist.</p>"
         self.send_response_content(content, status=404)
-
-    def handle_blinkit_ss_upload(self, params):
-        try:
-            calculated_df, client_name = self._get_df_from_upload(params)
-
-            response_data = []
-
-            self.send_response_content(
-                json.dumps(response_data, indent=2),
-                content_type='application/json'
-            )
-        except Exception as e:
-            error_msg = str(e)
-            self._log_error_info(error_msg)
-            error_response = {"error": str(e)}
-            self.send_response_content(
-                json.dumps(error_response),
-                status=400,
-                content_type='application/json'
-            )
 
 def run_server(port=8000):
     server_address = ('0.0.0.0', port)

@@ -2,6 +2,7 @@
 import json
 import pandas as pd
 import psycopg2
+from pprint import pprint
 
 from ..utils import get_last_value, get_mapper_file, split_json_list, get_date_file_with_type
 from ..config import DEMO_DB_CONFIG
@@ -22,8 +23,10 @@ def calculate_fk_complete_category_metrics(client_name, start_date, end_date, ca
     for item in orders:
         date = item[0]
         val_df = pd.DataFrame(json.loads(item[1]))
-        val_df["category"] = val_df["fsn"].apply(lambda x: fsn_dict[x]["category"])
-        val_df["price"] = val_df["fsn"].apply(lambda x: fsn_dict[x]["price"])
+        # print("fsn val at x: ", fsn_dict[x])
+        val_df["category"] = val_df["fsn"].apply(lambda x: fsn_dict.get(x, {}).get("category"))
+        val_df["price"] = val_df["fsn"].apply(lambda x: fsn_dict.get(x, {}).get("price"))
+        val_df = val_df[val_df["category"].notna()]
         val_df["revenue"] = val_df["quantity"] * val_df["price"]
         val_df = val_df[["fsn", "category", "quantity", "revenue", "order_item_status"]]
         all_fsns = val_df.fsn.unique().tolist()
@@ -61,9 +64,10 @@ def calculate_fk_complete_category_metrics(client_name, start_date, end_date, ca
 
     for item in pla_campaign:
         date = item[0]
+
         val_df = pd.DataFrame(json.loads(item[1]))
-        val_df["category"] = val_df["fsn"].apply(lambda x: fsn_dict[x]["category"])
-        val_df["price"] = val_df["fsn"].apply(lambda x: fsn_dict[x]["price"])
+        val_df["category"] = val_df["fsn"].apply(lambda x: fsn_dict.get(x, {}).get("category"))
+        val_df["price"] = val_df["fsn"].apply(lambda x: fsn_dict.get(x, {}).get("price"))
         val_df["date"] = date
         pla_campaign_df = pd.concat([pla_campaign_df, val_df])
 
