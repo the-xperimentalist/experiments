@@ -32,13 +32,15 @@ def calculate_fk_complete_sku_metrics(client_name, start_date, end_date, fsn_lis
         cancelled_val_df = val_df[val_df["order_item_status"] == "CANCELLED"]
 
         for fsn in all_fsns:
+            fsn_delivered_val_df = delivered_val_df[delivered_val_df["fsn"] == fsn]
+            fsn_cancelled_val_df = cancelled_val_df[cancelled_val_df["fsn"] == fsn]
             orders_dict = {}
             orders_dict["date"] = date
             orders_dict["fsn"] = fsn
             orders_dict["category"] = fsn_dict[fsn]["category"]
-            orders_dict["units_sold"] = delivered_val_df.quantity.sum()
-            orders_dict["product_sales"] = delivered_val_df.revenue.sum()
-            orders_dict["cancelled_units"] = cancelled_val_df.quantity.sum()
+            orders_dict["units_sold"] = fsn_delivered_val_df.quantity.sum()
+            orders_dict["product_sales"] = fsn_delivered_val_df.revenue.sum()
+            orders_dict["cancelled_units"] = fsn_cancelled_val_df.quantity.sum()
             orders_data.append(orders_dict)
     orders_df = pd.DataFrame(orders_data)
     orders_df = orders_df[orders_df["fsn"].isin(fsn_list)]
